@@ -5,9 +5,10 @@ export default function ParticleCanvas() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || typeof window === 'undefined') return;
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const particles = Array.from({ length: 60 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,

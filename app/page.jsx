@@ -174,7 +174,7 @@ function ResolutionBadge({ res }) {
 
 function WallpaperCard({ w, onPreview, onNavigate }) {
   const [hovered, setHovered] = useState(false);
-  const topRes = w.resolutions.includes("8K") ? "8K" : w.resolutions.includes("4K") ? "4K" : "HD";
+  const topRes = w.resolutions?.includes("8K") ? "8K" : w.resolutions?.includes("4K") ? "4K" : "HD";
   return (
     <div
       className="relative rounded-xl overflow-hidden cursor-pointer group"
@@ -222,7 +222,7 @@ function WallpaperCard({ w, onPreview, onNavigate }) {
         <p className="text-gray-400 text-xs mt-0.5">{w.game}</p>
         <div className="flex items-center justify-between mt-2">
           <span className="text-[11px] text-purple-400 font-semibold">{w.genre}</span>
-          <span className="text-[11px] text-gray-500">↓ {(w.downloads / 1000).toFixed(1)}K</span>
+          <span className="text-[11px] text-gray-500">↓ {((w.downloads ?? 0) / 1000).toFixed(1)}K</span>
         </div>
       </div>
     </div>
@@ -231,6 +231,7 @@ function WallpaperCard({ w, onPreview, onNavigate }) {
 
 function Lightbox({ wall, onClose }) {
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const handler = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -262,9 +263,14 @@ function HomePageContent({ setPage, onPreview, setDetailWall }) {
   const PER_PAGE = 9;
 
   const filtered = useMemo(() => {
-    let list = WALLPAPERS;
+    let list = WALLPAPERS ?? [];
     if (category !== "All") list = list.filter(w => w.genre === category);
-    if (searchQ) list = list.filter(w => w.title.toLowerCase().includes(searchQ.toLowerCase()) || w.game.toLowerCase().includes(searchQ.toLowerCase()));
+    if (searchQ) list = list.filter(w => {
+      const title = w.title?.toLowerCase() ?? "";
+      const game = w.game?.toLowerCase() ?? "";
+      const query = searchQ.toLowerCase();
+      return title.includes(query) || game.includes(query);
+    });
     return list;
   }, [category, searchQ]);
 
@@ -322,11 +328,11 @@ function HomePageContent({ setPage, onPreview, setDetailWall }) {
                 <div className="relative" style={{ aspectRatio: "16/9" }}>
                   <img src={w.thumb} alt={w.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <div className="absolute bottom-2 left-2"><ResolutionBadge res={w.resolutions.includes("8K") ? "8K" : "4K"} /></div>
+                  <div className="absolute bottom-2 left-2"><ResolutionBadge res={w.resolutions?.includes("8K") ? "8K" : "4K"} /></div>
                 </div>
                 <div className="p-2.5">
                   <p className="text-white text-xs font-bold truncate">{w.game}</p>
-                  <p className="text-gray-500 text-[11px]">↓ {(w.downloads / 1000).toFixed(1)}K</p>
+                  <p className="text-gray-500 text-[11px]">↓ {((w.downloads ?? 0) / 1000).toFixed(1)}K</p>
                 </div>
               </div>
             ))}
@@ -376,10 +382,11 @@ function HomePageContent({ setPage, onPreview, setDetailWall }) {
 }
 
 function DetailPage({ wall, onPreview, setPage, setDetailWall }) {
-  const [selRes, setSelRes] = useState(wall?.resolutions?.[1] || "4K");
+  const [selRes, setSelRes] = useState(wall?.resolutions?.[1] ?? "4K");
   if (!wall) return <div className="pt-24 text-center text-gray-500">Wallpaper not found.</div>;
-  const related = WALLPAPERS.filter(w => w.id !== wall.id && (w.genre === wall.genre || w.game === wall.game)).slice(0, 4);
+  const related = WALLPAPERS.filter(w => w.id !== wall?.id && (w.genre === wall?.genre || w.game === wall?.game)).slice(0, 4);
   const handleDownload = () => {
+    if (!wall?.full) return;
     if (wall.premium && selRes === "8K") {
       alert("⚡ 8K downloads are a Pro feature. Upgrade to VersaceHub Pro for $4.99/month!");
       setPage("premium");
@@ -403,10 +410,10 @@ function DetailPage({ wall, onPreview, setPage, setDetailWall }) {
           <h1 className="text-white font-black text-3xl mb-1">{wall.title}</h1>
           <p className="text-gray-400 mb-4">{wall.game} · {wall.genre}</p>
           <div className="flex flex-wrap gap-2 mb-6">
-            {wall.tags.map(t => <span key={t} className="text-xs px-3 py-1 rounded-full text-purple-300 border border-purple-500/30 bg-purple-500/10">#{t}</span>)}
+            {wall.tags?.map(t => <span key={t} className="text-xs px-3 py-1 rounded-full text-purple-300 border border-purple-500/30 bg-purple-500/10">#{t}</span>)}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-            {[["👁️ Views", wall.views.toLocaleString()], ["↓ Downloads", wall.downloads.toLocaleString()], ["🎨 Artist", wall.artist.split(" ").slice(0,2).join(" ")], ["📅 Added", wall.uploadedAt]].map(([k,v]) => (
+          {[["👁️ Views", wall.views?.toLocaleString() ?? "0"], ["↓ Downloads", wall.downloads?.toLocaleString() ?? "0"], ["🎨 Artist", wall.artist ? wall.artist.split(" ").slice(0,2).join(" ") : "Unknown Artist"], ["📅 Added", wall.uploadedAt ?? "Unknown"]].map(([k,v]) => (
               <div key={k} className="rounded-xl p-3" style={{ background: "#111827" }}>
                 <p className="text-gray-500 text-xs mb-1">{k}</p>
                 <p className="text-white font-bold text-sm">{v}</p>
@@ -477,9 +484,15 @@ function SearchPage({ query, onPreview, setPage, setDetailWall }) {
   const [genreFilter, setGenreFilter] = useState("All");
 
   const results = useMemo(() => {
-    let list = WALLPAPERS;
-    if (localQ) list = list.filter(w => w.title.toLowerCase().includes(localQ.toLowerCase()) || w.game.toLowerCase().includes(localQ.toLowerCase()) || w.tags.some(t => t.includes(localQ.toLowerCase())));
-    if (resFilter !== "All") list = list.filter(w => w.resolutions.includes(resFilter));
+    let list = WALLPAPERS ?? [];
+    if (localQ) list = list.filter(w => {
+      const title = w.title?.toLowerCase() ?? "";
+      const game = w.game?.toLowerCase() ?? "";
+      const query = localQ.toLowerCase();
+      const tagsMatch = Array.isArray(w.tags) ? w.tags.some(t => t.toLowerCase().includes(query)) : false;
+      return title.includes(query) || game.includes(query) || tagsMatch;
+    });
+    if (resFilter !== "All") list = list.filter(w => w.resolutions?.includes(resFilter));
     if (genreFilter !== "All") list = list.filter(w => w.genre === genreFilter);
     return list;
   }, [localQ, resFilter, genreFilter]);
@@ -531,11 +544,15 @@ function SearchPage({ query, onPreview, setPage, setDetailWall }) {
 function CategoryPage({ genre, onPreview, setPage, setDetailWall }) {
   const [sort, setSort] = useState("trending");
   const wallpapers = useMemo(() => {
-    let list = WALLPAPERS.filter(w => w.genre === genre);
-    if (sort === "newest") list = [...list].sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-    if (sort === "downloads") list = [...list].sort((a, b) => b.downloads - a.downloads);
-    if (sort === "trending") list = [...list].sort((a, b) => b.trending - a.trending);
-    if (sort === "4k") list = list.filter(w => w.resolutions.includes("4K") || w.resolutions.includes("8K"));
+    let list = WALLPAPERS?.filter(w => w.genre === genre) ?? [];
+    if (sort === "newest") list = [...list].sort((a, b) => {
+      const dateA = a?.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const dateB = b?.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+    if (sort === "downloads") list = [...list].sort((a, b) => (b?.downloads ?? 0) - (a?.downloads ?? 0));
+    if (sort === "trending") list = [...list].sort((a, b) => (b?.trending ? 1 : 0) - (a?.trending ? 1 : 0));
+    if (sort === "4k") list = list.filter(w => (w?.resolutions?.includes("4K") || w?.resolutions?.includes("8K")));
     return list;
   }, [genre, sort]);
   return (
@@ -695,7 +712,7 @@ export default function VersaceHub() {
     } else {
       setPage(p);
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const setPageWrapped = useCallback((p) => {
@@ -705,8 +722,8 @@ export default function VersaceHub() {
   const handleSetDetailAndNav = useCallback((w) => {
     setDetailWall(w);
     setPage("detail");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [setDetailWall, setPage]);
 
   return (
     <div style={{ background: "#030712", minHeight: "100vh", fontFamily: "'Inter', sans-serif", color: "#fff" }}>
