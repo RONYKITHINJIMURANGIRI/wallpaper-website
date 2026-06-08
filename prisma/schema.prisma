@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Role enum for user permissions
+enum UserRole {
+  ADMIN
+  USER
+  MODERATOR
+}
+
+// User status enum
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  REQUIRES_PASSWORD_CHANGE
+}
+
+// User accounts
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  password              String
+  firstName             String?
+  lastName              String?
+  role                  UserRole  @default(USER)
+  status                UserStatus @default(ACTIVE)
+  lastLogin             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Relations
+  auditLogs             AuditLog[]
+  passwordResetTokens   PasswordResetToken[]
+  loginAttempts         LoginAttempt[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+// Password reset tokens
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  email     String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
+}
+
+// Login attempts for rate limiting
+model LoginAttempt {
+  id        String    @id @default(cuid())
+  email     String
+  success   Boolean
+  ipAddress String?
+  createdAt DateTime  @default(now())
+  
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+// Wallpaper categories
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  slug        String   @unique
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  wallpapers  Wallpaper[]
+
+  @@index([slug])
+}
+
+// Wallpapers
+model Wallpaper {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  originalImage   String    // path to original image
+  compressedImage String    // path to compressed image
+  thumbnail       String    // path to thumbnail
+  width           Int?
+  height          Int?
+  fileSize        Int?      // original file size
+  downloads       Int       @default(0)
+  views           Int       @default(0)
+  featured        Boolean   @default(false)
+  published       Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  categoryId      String
+  category        Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tags            Tag[]     @relation("WallpaperToTag")
+
+  @@index([categoryId])
+  @@index([title])
+  @@index([featured])
+  @@index([published])
+}
+
+// Tags for search and filtering
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  wallpapers  Wallpaper[] @relation("WallpaperToTag")
+
+  @@index([slug])
+}
+
+// Audit logs for admin actions
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String   // e.g., "WALLPAPER_CREATED", "CATEGORY_DELETED", "USER_SUSPENDED"
+  entity     String   // e.g., "wallpaper", "category", "user"
+  entityId   String   // ID of the entity affected
+  changes    String?  // JSON string of what changed
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  
+  // Relations
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([action])
+  @@index([entity])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Session management (optional, if using custom sessions)
+model Session {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  userId     String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}

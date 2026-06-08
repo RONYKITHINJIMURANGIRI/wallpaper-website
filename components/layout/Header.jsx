@@ -8,6 +8,7 @@ export default function Header({ page }) {
           <a href="/search" className={page === 'search' ? 'text-white' : ''}>Search</a>
           <a href="/premium" className={page === 'premium' ? 'text-white' : ''}>Premium</a>
           <a href="/about" className={page === 'about' ? 'text-white' : ''}>About</a>
+          <a href="/signup" className={page === 'signup' ? 'text-white' : 'text-cyan-200 hover:text-white'}>Sign Up</a>
         </nav>
       </div>
     </header>
