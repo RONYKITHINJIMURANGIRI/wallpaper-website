@@ -1,0 +1,105 @@
+{
+  "name": "Wallpaper",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "game": {
+      "type": "string"
+    },
+    "genre": {
+      "type": "string",
+      "enum": [
+        "FPS",
+        "RPG",
+        "Open World",
+        "Sci-Fi",
+        "Fantasy",
+        "Horror",
+        "Anime",
+        "Abstract"
+      ]
+    },
+    "thumb_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "full_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artist": {
+      "type": "string"
+    },
+    "downloads": {
+      "type": "number",
+      "default": 0
+    },
+    "views": {
+      "type": "number",
+      "default": 0
+    },
+    "trending": {
+      "type": "boolean",
+      "default": false
+    },
+    "premium": {
+      "type": "boolean",
+      "default": false
+    },
+    "resolutions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "HD",
+          "4K",
+          "8K",
+          "Ultrawide",
+          "Mobile"
+        ]
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
+      "default": "published"
+    }
+  },
+  "required": [
+    "title",
+    "game",
+    "genre",
+    "thumb_url",
+    "full_url"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

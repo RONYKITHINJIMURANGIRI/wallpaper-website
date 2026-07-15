@@ -1,0 +1,48 @@
+{
+  "name": "AdminLoginAlert",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "ip_hint": {
+      "type": "string"
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "login_time": {
+      "type": "string"
+    },
+    "alert_sent": {
+      "type": "boolean",
+      "default": false
+    },
+    "suspicious": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "email",
+    "login_time"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
